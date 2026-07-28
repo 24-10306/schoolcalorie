@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 급식 영양 분석기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen p-4 md:p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="p-6 md:p-8">
+            <h1 class="text-3xl font-bold mb-2">🍱 AI 급식 분석</h1>
+            <p class="text-slate-600 mb-6">급식 사진을 업로드하면 칼로리와 영양소를 분석해 드립니다.</p>
+            
+            <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 transition">
+                <input type="file" id="imageInput" accept="image/*" class="hidden">
+                <label for="imageInput" class="cursor-pointer">
+                    <div class="text-6xl mb-4">📸</div>
+                    <span class="text-blue-600 font-semibold">사진 선택 또는 촬영</span>
+                </label>
+            </div>
+            <img id="preview" class="mt-6 rounded-lg w-full hidden" />
+            <button id="analyzeBtn" class="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 hidden">분석 시작</button>
+        </div>
+
+        <div id="results" class="hidden p-6 md:p-8 border-t border-slate-100 bg-slate-50">
+            <h2 class="text-2xl font-bold mb-4">분석 결과</h2>
+            <div id="content" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('imageInput');
+        const preview = document.getElementById('preview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const results = document.getElementById('results');
+        const content = document.getElementById('content');
+
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                preview.src = ev.target.result;
+                preview.classList.remove('hidden');
+                analyzeBtn.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        };
+
+        analyzeBtn.onclick = async () => {
+            const base64 = preview.src.split(',')[1];
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerText = '분석 중...';
+            
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ image: base64 })
+                });
+                const data = await response.json();
+                results.classList.remove('hidden');
+                content.innerHTML = `<pre class="whitespace-pre-wrap">${data.analysis}</pre>`;
+            } catch (err) {
+                content.innerHTML = "분석에 실패했습니다. 다시 시도해주세요.";
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerText = '분석 시작';
+            }
+        };
+    </script>
+</body>
+</html>
